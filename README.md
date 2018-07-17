@@ -13,6 +13,8 @@
 
 install packages: ```$ npm install```
 
+note that you need to have a mongodb running with default port (localhost:27017) to run the project
+
 to run the project: ```$ node app.js```
 
 to test the result:
