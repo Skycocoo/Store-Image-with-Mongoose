@@ -17,7 +17,7 @@ to run the project: ```$ node app.js```
 
 to test the result:
 
-- first open ```localhost:8000``` to upload a random image;
+- first open ```http://localhost:8000``` to upload a random image;
 
 - then open ```http://localhost:8000/images``` to check the ```_id``` of the stored image;
 
