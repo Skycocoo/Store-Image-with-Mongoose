@@ -1,3 +1,5 @@
+// modified by Yuxi Luo, July 2018
+
 var express = require('express');
 var router = express.Router();
 var multer = require('multer');
@@ -5,23 +7,13 @@ var bodyParser = require("body-parser");
 var fs = require("fs");
 var mongoose = require('mongoose');
 
-//path and originalname are the fields stored in mongoDB
-var imagePath = mongoose.Schema({
+var ImageSchema = mongoose.Schema({
 	data: Buffer,
+	originalname: String,
 	contentType: String,
-	path: {
-		type: String,
-		required: true,
-		trim: true
-	},
-	// originalname: {
-	// 	type: String,
-	// 	required: true
-	// }
 });
 
-// var ImageData = module.exports = mongoose.model('ImageData', imagedata);
-var Image = module.exports = mongoose.model('files', imagePath);
+var Image = module.exports = mongoose.model('files', ImageSchema);
 
 router.getImages = function(callback) {
     Image.find(callback);
@@ -33,7 +25,6 @@ router.getImageById = function(id, callback) {
 
 router.addImage = function(image, callback) {
 	Image.create(image, callback);
-	// item.save();
 }
 
 
@@ -41,40 +32,28 @@ router.get('/', function(req, res, next) {
     res.render('index.ejs');
 });
 
-// router.use(bodyParser.text());
-router.post('/', function(req, res) {
-	var path = document.getElementById("imagepath").value;
-	// console.log(req);
-    res.send(path);
-	// console.log(req.files);
 
-    /* req.files has the information regarding the file you are uploading...
-       from the total information, i am just using the path and the imageName to store in the mongo collection(table)
-    */
+// https://github.com/expressjs/multer#memorystorage
+// use memoryStorage to generate buffer for the file
+var storage = multer.memoryStorage()
+var upload = multer({ storage: storage })
 
-    // var path = req.files[0].path;
-    // var imageName = req.files[0].originalname;
+router.post('/', upload.any(), function(req, res) {
+    var image = {};
+	image['data'] = req.files[0].buffer;
+	image['originalname'] = req.files[0].originalname;
+	image['contentType'] = req.files[0].mimetype;
 
-    var imagePath = {};
-	// imagePath['data'] = fs.readFileSync(path);
-
-	fs.readFile(path, (err, data) => {
-		if (err) throw err;
-		imagePath['data'] = data;
-		imagePath['contentType'] = 'image/png';
-		imagePath['path'] = path;
-		// imagePath['originalname'] = imageName;
-
-		// console.log(imagePath['data']);
-		// console.log(imagePath['path']);
-
-		// imagePath contains two objects, path and the imageName
-		// we are passing two objects in the addImage method.. which is defined above..
-		router.addImage(imagePath, (err) => {
-			// err: null
-			// console.log(err.message);
-		});
-	})
+	// console.log(image['data']);
+	router.addImage(image, (err, docs) => {
+		if (err) {
+			console.log(err.message);
+			throw err;
+		}
+		
+		res.send(docs['_id']);
+		console.log("Successfully inserted one image!");
+	});
 
 
 });
@@ -86,9 +65,7 @@ router.get('/picture/:id',function(req,res){
 		if (err) {
 			throw err;
 		}
-		// console.log(file);
-		// console.log(file.path);
-		// console.log(file.data);
+		// display image from arrayBuffer stored in database
 		res.render("home.ejs",{image: 'data:image/png;base64,' + base64ArrayBuffer(file.data)});
 	});
 });
